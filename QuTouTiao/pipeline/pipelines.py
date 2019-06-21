@@ -16,6 +16,7 @@ class QutoutiaoPipeline(object):
         self.qutoutiao_db.news_brief_collect.create_index([("news_id", pymongo.DESCENDING)],
                                                     unique=True, background=True, name='idx_id_col_news_id')
         self.qutoutiao_db.news_brief_collect.create_index([("ctime", pymongo.DESCENDING)], name='idx_ctime')
+        self.qutoutiao_db.news_brief_collect.create_index([("publish_time", pymongo.DESCENDING)], name='idx_pub_time')
         self.qutoutiao_db.news_detail.create_index([("news_id", pymongo.DESCENDING)], name='idx_col_news_id')
 
     def process_item(self, item, spider):

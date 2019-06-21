@@ -1,23 +1,40 @@
-
-
 import scrapy
-from bs4 import BeautifulSoup
 from scrapy.http import Request
 from QuTouTiao.items import QutoutiaoItem
 import json
 import time
+import pymongo
+import datetime 
+import logging
+
+logging.basicConfig(filename="./log/{}.log".format(str(datetime.date.today())), filemode="a", 
+          format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+          datefmt="%Y-%m-%d %H:%M:%S", level=logging.DEBUG)
+
+
+def get_newest_by_publish_time():
+    conn = pymongo.MongoClient(host='localhost', port=27017)
+    news_info_cur = conn.qutoutiao_db.news_brief_collect.find().sort('publish_time', pymongo.DESCENDING).limit(1)
+    try:
+        return news_info_cur[0].get('news_id', ''), news_info_cur[0].get('publish_time', '')
+    except IndexError:
+        return 0, ''
+
 
 class QuSpider(scrapy.Spider):
     name = 'QuTouTiao'
-    allowed_domains = ['qutoutiao.net', 'qktoutiao.com']
+    allowed_domains = ['qutoutiao.net', 'qktoutiao.com', 'api.1sapp.com']
 
     bash_url = 'http://api.1sapp.com/content/outList?cid='
     mid_url = '&tn=1&page='
-    end_url = '&limit=100&user=temporary1534345404402&show_time=&min_time=&content_type=1&dtu=200'
+    end_url = '&limit=10&user=temporary1534345404402&show_time=&min_time=&content_type=1&dtu=200'
+    
+    api_url = 'http://api.1sapp.com/content/outList?cid={}&tn=1&page=1&limit=2&user=temporary1534345404402&show_time=&min_time={}&content_type=1&dtu=200'
+    finish_flag = False # if this scrapy epoch is finished 
 
-    '''&limit=10&user=temporary1534345404402&show_time=1534608545989&min_time=1534608120000&content_type=1&dtu=200'''
+    newest_news_info = get_newest_by_publish_time()
 
-    pageNames = {
+    cate_info_dict = {
         # '6': '娱乐',
         # '255': '推荐',
         # '1': '热点',
@@ -87,18 +104,27 @@ class QuSpider(scrapy.Spider):
     """
 
 
+
+
     def start_requests(self):
-        for num, value in self.pageNames.items():
-            for i in range(5):  # only scrapy the first 5 pages of each category(cid)
-                url = self.bash_url + str(num) + self.mid_url + str(i+1) + self.end_url
-                print('start crawl news list ' + url)
-                yield Request(url, callback=self.parse, meta={'type': value})
+        for cid, c_name in self.cate_info_dict.items():
+            list_url = self.api_url.format(cid, '')
+            logging.info("start request list_url {}".format(list_url))
+            yield Request(list_url, callback=self.parse, meta={'c_name': c_name, 'cid': cid})
 
 
     def parse(self, response):
         json_res = json.loads(response.body.decode('utf-8'))
+        min_time = json_res['data']['min_time'] 
+        cid_meta = response.meta.get('cid', -1) # get cid  from meta 
+        c_name_meta = response.meta.get('c_name', '') # get c_name from meta 
         news_list = json_res['data']['data']
+        # scrapy list step by step 
+        list_url = self.api_url.format(cid_meta, min_time)
         for news in news_list:
+            if self.finish_flag is True:
+                logging.info("Current epoch has finished {}".format(list_url))
+                break  
             news_url = news['detail_url'] # detail url contains main part of content using json format 
             news_stat_info = {
                 'read_cnt': news.get('read_count', 0),
@@ -111,8 +137,18 @@ class QuSpider(scrapy.Spider):
                 'publish_time': news.get('publish_time', -1)
             }
         
-            print('start crawl news content ' + news_url)
-            yield Request(news_url, callback=self.get_news_brief, meta={'stat_info': news_stat_info})
+            # as long as find an exsist news_id then set finish flag = True and break 
+            if news['id'] == self.newest_news_info[0] and news['publish_time'] == self.newest_news_info[1]: 
+                self.finish_flag = True 
+                logging.info("Current epoch has finished {}, with threshold news_id: {}, publish_time: {}".format(list_url, 
+                                                                                                            self.newest_news_info[0],
+                                                                                                            self.newest_news_info[1]))
+                break 
+            logging.info("start request brief_url {}".format(news_url))
+            yield Request(news_url, callback=self.get_news_brief, meta={'stat_info': news_stat_info}, priority=10) # bigger priority
+        if self.finish_flag == False:
+            logging.info("start request list_url {}".format(list_url))
+            yield Request(list_url, callback=self.parse, meta={'c_name': c_name_meta, 'cid': cid_meta}, priority=8)
 
 
     def get_news_brief(self, response):
@@ -120,8 +156,6 @@ class QuSpider(scrapy.Spider):
         # news_id = news_brief_json['id']
         item = QutoutiaoItem()
         news_stat_info = response.meta['stat_info']
-        print(response.meta)
-        print(type(response.meta))
         item = {
             "news_id": news_brief_json.get('id',''),
             "title": news_brief_json.get('title', ''),

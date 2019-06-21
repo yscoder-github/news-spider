@@ -5,9 +5,9 @@ try:
         [
             'scrapy',
             'runspider',
-            'QuTouTiao',
-            '-o',
-            'out.json',
+            'QuTouTiao'
+            # '-o',
+            # 'out.json',
         ]
     )
 except SystemExit:
