@@ -10,7 +10,7 @@
 scrapy crawl QuTouTiao
 ``` 
     """
-    in qutoutiap api : page is of no use!!!!! 
+    在趣头条的api中,page(页码)参数是没有作用的.
     # the most important fields : 
        (1) limit: max can set to 100, at here i set it to 100 to decrease uncertain
        (2) min_time param *********** 
