@@ -1,6 +1,6 @@
 ### 该项目目前涵盖的新闻应用如下：
 
-#### 趣头条 ： QuTouTiao.py   
+#### 1.趣头条 ： QuTouTiao.py   
 
 
 ``` shell 
