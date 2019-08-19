@@ -13,7 +13,7 @@ logging.basicConfig(filename="./log/{}.log".format(str(datetime.date.today())), 
 
 
 def get_newest_by_publish_time():
-    conn = pymongo.MongoClient(host='localhost', port=27017)
+    conn = pymongo.MongoClient(host='10.26.27.194', port=27017)
     news_info_cur = conn.qutoutiao_db.news_brief_collect.find().sort('publish_time', pymongo.DESCENDING).limit(1)
     try:
         return news_info_cur[0].get('news_id', ''), news_info_cur[0].get('publish_time', '')

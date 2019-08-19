@@ -11,7 +11,7 @@ class QutoutiaoPipeline(object):
 
     def __init__(self):
         
-        self.client = pymongo.MongoClient(host='localhost', port=27017)
+        self.client = pymongo.MongoClient(host='10.26.27.194', port=27017)
         self.qutoutiao_db = self.client.qutoutiao_db
         self.qutoutiao_db.news_brief_collect.create_index([("news_id", pymongo.DESCENDING)],
                                                     unique=True, background=True, name='idx_id_col_news_id')
