@@ -94,3 +94,7 @@ RETRY_ENABLED=False
 # HTTPCACHE_DIR = 'httpcache'
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+# MONGO CONFIG 
+MONGO_HOST = '10.26.27.194'
+MONGO_PORT = 27017

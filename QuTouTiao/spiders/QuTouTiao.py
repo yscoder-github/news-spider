@@ -6,14 +6,11 @@ import time
 import pymongo
 import datetime 
 import logging
-
-logging.basicConfig(filename="./log/{}.log".format(str(datetime.date.today())), filemode="a", 
-          format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
-          datefmt="%Y-%m-%d %H:%M:%S", level=logging.DEBUG)
-
+from scrapy.utils.project import get_project_settings
 
 def get_newest_by_publish_time():
-    conn = pymongo.MongoClient(host='10.26.27.194', port=27017)
+    settings = get_project_settings()
+    conn = pymongo.MongoClient(host=settings.get('MONGO_HOST'), port=settings.get('MONGO_PORT'))
     news_info_cur = conn.qutoutiao_db.news_brief_collect.find().sort('publish_time', pymongo.DESCENDING).limit(1)
     try:
         return news_info_cur[0].get('news_id', ''), news_info_cur[0].get('publish_time', '')
